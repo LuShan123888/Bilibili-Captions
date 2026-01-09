@@ -11,7 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from mcp.server.fastmcp import FastMCP
-from bilibili_api import (
+from .api import (
     get_video_info,
     list_subtitles,
     download_subtitle_content,

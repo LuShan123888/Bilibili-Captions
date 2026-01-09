@@ -16,8 +16,8 @@ import os
 import re
 from datetime import datetime
 
-# 导入共享模块
-from bilibili_api import get_sessdata, make_safe_filename, extract_bvid
+# 导入共享模块（同包）
+from .api import get_sessdata, make_safe_filename, extract_bvid
 
 # 尝试导入 faster-whisper（推荐，速度快）
 try:
@@ -366,10 +366,11 @@ def transcribe_with_openai_whisper(audio_filename, video_title, model_size, outp
     print(f"ASR字幕生成成功！已保存为: {srt_filename}")
     convert_to_simplified(srt_filename)
 
-if __name__ == "__main__":
+def main() -> None:
+    """CLI入口点"""
     # 解析命令行参数
     if len(sys.argv) < 2:
-        print("用法: python main.py <B站视频URL> [模型大小]")
+        print("用法: bilibili-subtitle <B站视频URL> [模型大小]")
         print("模型大小可选: base, small, medium (默认), large")
         sys.exit(1)
 
@@ -400,3 +401,7 @@ if __name__ == "__main__":
     if not get_subtitles_from_bilibili(video_title, cid, bvid, output_dir, video_url):
         # 如果没有现有字幕，则使用ASR生成
         generate_subtitles_with_asr(video_url, safe_title, model_size, output_dir, bvid)
+
+
+if __name__ == "__main__":
+    main()
