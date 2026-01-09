@@ -1,13 +1,23 @@
 # /// script
 # dependencies = ["requests", "faster-whisper", "opencc-python-reimplemented"]
-# ///
+# -*-
 
+"""
+B站字幕抓取工具 - CLI 版本
+
+支持从B站视频下载字幕，若无字幕则使用 Whisper ASR 生成。
+"""
+
+import asyncio
 import sys
 import requests
 import subprocess
 import os
 import re
 from datetime import datetime
+
+# 导入共享模块
+from bilibili_api import get_sessdata, make_safe_filename, extract_bvid
 
 # 尝试导入 faster-whisper（推荐，速度快）
 try:
@@ -37,9 +47,6 @@ except ImportError:
     print("提示: opencc 库未安装，字幕将保持原样（可能是繁体）。")
     print("如需自动转换为简体，请使用 'pip install opencc-python-reimplemented' 安装。")
 
-def make_safe_filename(filename):
-    """移除或替换文件名中的非法字符"""
-    return re.sub(r'[\\/*?:"<>|]', "", filename)
 
 def create_output_dir():
     """创建带时间戳的输出目录"""
@@ -48,23 +55,6 @@ def create_output_dir():
     os.makedirs(output_dir, exist_ok=True)
     return output_dir
 
-def get_sessdata():
-    """获取 SESSDATA，按优先级从环境变量、配置文件、默认值读取"""
-    # 1. 从环境变量读取
-    sessdata = os.environ.get('BILIBILI_SESSDATA')
-    if sessdata:
-        return sessdata
-
-    # 2. 从项目目录的 .env 文件读取
-    env_file = os.path.join(os.path.dirname(__file__), '.env')
-    if os.path.exists(env_file):
-        with open(env_file, 'r') as f:
-            for line in f:
-                if line.startswith('BILIBILI_SESSDATA='):
-                    return line.strip().split('=', 1)[1].strip('\"\'')
-
-    # 3. 未找到SESSDATA，返回None
-    return None
 
 def convert_to_simplified(srt_filename):
     """将字幕文件从繁体转换为简体"""
@@ -88,43 +78,20 @@ def convert_to_simplified(srt_filename):
         return False
 
 def get_video_info(url):
-    """获取B站视频的标题和CID"""
+    """获取B站视频的标题和CID（同步版本，供CLI使用）"""
     try:
-        # 伪装成浏览器发送请求
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'https://www.bilibili.com/'
         }
-        # 从URL中提取BV号
-        # 支持多种URL格式:
-        # - https://www.bilibili.com/video/BV1xx411c7mD/
-        # - https://www.bilibili.com/list/watchlater/?bvid=BV16HqFBZE6N
-        # - BV1xx411c7mD
-        bvid = None
-        if 'video' in url:
-            # 标准视频URL
-            bvid = url.split('/')[-2]
-        elif 'bvid=' in url:
-            # 稍后观看列表等带参数的URL
-            import urllib.parse
-            parsed = urllib.parse.urlparse(url)
-            params = urllib.parse.parse_qs(parsed.query)
-            bvid = params.get('bvid', [None])[0]
-        else:
-            # 直接BV号或短链接
-            bvid = url.strip().split('/')[-1]
-            if 'bvid=' in bvid:
-                bvid = bvid.split('bvid=')[1].split('&')[0]
 
-        if not bvid or not bvid.startswith('BV'):
-            print(f"错误: 无法从URL中提取BV号: {url}")
-            return None, None, None
+        # 使用共享的 extract_bvid 函数提取BV号
+        bvid = extract_bvid(url)
 
         # 获取视频信息的API
         info_api_url = f"https://api.bilibili.com/x/web-interface/view?bvid={bvid}"
-
         response = requests.get(info_api_url, headers=headers)
-        response.raise_for_status() # 如果请求失败则抛出异常
+        response.raise_for_status()
 
         data = response.json()
         if data['code'] == 0:
@@ -134,6 +101,9 @@ def get_video_info(url):
         else:
             print(f"错误: 无法获取视频信息。B站返回: {data['message']}")
             return None, None, None
+    except ValueError as e:
+        print(f"错误: {e}")
+        return None, None, None
     except Exception as e:
         print(f"错误: 获取视频信息时出错: {e}")
         return None, None, None
