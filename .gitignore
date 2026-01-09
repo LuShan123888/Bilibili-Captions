@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
 
 # Virtual environments
 .venv
@@ -20,6 +21,17 @@ outputs/
 *.mp4
 *.wav
 *.srt
+
+# System files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
 
 # uv lock file (可选，根据需求)
 # uv.lock
