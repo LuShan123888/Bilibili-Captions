@@ -15,7 +15,7 @@ from .api import (
 )
 
 # 初始化MCP服务器
-mcp = FastMCP("bilibili_captions")
+mcp = FastMCP("bilibili-captions")
 
 
 # ============================================================================
