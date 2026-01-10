@@ -10,27 +10,22 @@ B站字幕下载工具，支持 API 获取和 Whisper ASR 自动生成。
 - 📦 **MCP 服务器** - 集成到 Claude Desktop
 - 🧪 **完整测试** - 包含真实视频测试用例
 
-## 安装
-
-```bash
-# 使用 pip
-pip install bilibili-captions
-
-# 或使用 uv
-uv pip install bilibili-captions
-```
+---
 
 ## 使用
 
-### CLI 命令行
+无需安装，使用 `uvx` 直接运行：
 
 ```bash
+# 设置 SESSDATA 环境变量
+export BILIBILI_SESSDATA="你的值"
+
 # 下载字幕到终端（优先 API，无字幕时 ASR）
-bilibili-captions <BV号或URL> [模型大小]
+uvx bilibili-captions <BV号或URL> [模型大小]
 
 # 示例
-bilibili-captions BV16YC3BrEDz
-bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr medium
+uvx bilibili-captions BV16YC3BrEDz
+uvx bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr medium
 ```
 
 **模型大小选项：**
@@ -49,28 +44,6 @@ bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr medium
     "bilibili-captions": {
       "command": "uvx",
       "args": ["bilibili-captions-mcp"],
-      "env": {
-        "BILIBILI_SESSDATA": "你的 SESSDATA"
-      },
-      "timeout": 600000
-    }
-  }
-}
-```
-
-**本地开发模式：**
-
-```json
-{
-  "mcpServers": {
-    "bilibili-captions": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/path/to/bilibili_subtitle_fetcher",
-        "bilibili-captions-mcp"
-      ],
       "env": {
         "BILIBILI_SESSDATA": "你的 SESSDATA"
       },
@@ -103,6 +76,8 @@ bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr medium
 }
 ```
 
+---
+
 ## 开发
 
 ### 项目结构
@@ -124,17 +99,22 @@ bilibili_subtitle_fetcher/
 ### 本地运行
 
 ```bash
+# 克隆项目
+git clone <repo_url>
+cd bilibili_subtitle_fetcher
+
 # 安装依赖
 uv sync
+
+# 设置 SESSDATA
+cp .env.example .env
+# 编辑 .env 填入 SESSDATA
 
 # 运行 CLI
 uv run bilibili-captions <URL>
 
 # 运行 MCP 服务器
 uv run bilibili-captions-mcp
-
-# 运行测试
-uv run python tests/test_videos.py
 ```
 
 ### 测试
@@ -147,10 +127,12 @@ uv run python tests/test_videos.py
 | BV1qViQBwELr | 无字幕 ASR | 30 条，来源 `whisper_asr` |
 
 ```bash
-python tests/test_videos.py
+uv run python tests/test_videos.py
 # 或
 pytest tests/test_videos.py
 ```
+
+---
 
 ## 配置
 
