@@ -95,13 +95,14 @@ bilibili-captions "【我们拍到了，中国自己的可回收火箭。】 htt
 ### 项目结构
 
 ```
-bilibili_subtitle_fetcher/
+bilibili-captions/
 ├── src/bilibili_captions/
 │   ├── __init__.py
 │   ├── core.py      # 核心 API 功能
 │   ├── cli.py       # CLI 入口
 │   └── server.py    # MCP 服务器
 ├── tests/
+│   ├── __init__.py
 │   └── test_videos.py    # 测试用例
 ├── .env.example          # 配置示例
 ├── pyproject.toml
@@ -112,8 +113,8 @@ bilibili_subtitle_fetcher/
 
 ```bash
 # 克隆项目
-git clone <repo_url>
-cd bilibili_subtitle_fetcher
+git clone https://github.com/your-username/bilibili-captions.git
+cd bilibili-captions
 
 # 安装依赖
 uv sync
