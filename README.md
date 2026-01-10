@@ -37,7 +37,7 @@ bilibili-captions <BV号或URL> [模型大小]
 bilibili-captions BV16YC3BrEDz                                    # 直接 BV 号
 bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr   # 完整 URL
 bilibili-captions https://www.bilibili.com/list/watchlater/?bvid=BV16HqFBZE6N  # 稍后观看
-bilibili-captions "https://www.bilibili.com/video/BV16YC3BrEDz/?vd_source=xxx"  # 带参数
+bilibili-captions "https://www.bilibili.com/video/BV1y7qwBuEBw/?share_source=copy_web&vd_source=xxx"  # 分享链接
 ```
 
 **模型大小选项：**
