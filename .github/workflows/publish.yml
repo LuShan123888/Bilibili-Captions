@@ -2,10 +2,14 @@ name: Publish to PyPI
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish.yml'
+      - 'pyproject.toml'
 
 permissions:
   contents: read
@@ -39,6 +43,7 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     environment:
       name: pypi
       url: https://pypi.org/p/bilibili-captions
