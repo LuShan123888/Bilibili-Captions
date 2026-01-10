@@ -17,12 +17,11 @@ B站字幕下载工具，支持 API 获取和 Whisper ASR 自动生成。
 ### 安装
 
 ```bash
-# 克隆项目
-git clone <repo_url>
-cd bilibili_subtitle_fetcher
+# 使用 pip 安装（推荐）
+pip install bilibili-captions
 
-# 安装到全局（只需执行一次）
-uv pip install -e .
+# 或使用 uv
+uv pip install bilibili-captions
 ```
 
 ### 运行
