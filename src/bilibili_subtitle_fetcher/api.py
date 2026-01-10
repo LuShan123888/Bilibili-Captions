@@ -314,11 +314,16 @@ async def download_subtitle_content(
 
         # 根据格式返回内容
         if format == ResponseFormat.JSON:
+            # 繁简转换 JSON 内容
+            converted_body = [
+                {**item, "content": convert_to_simplified(item.get("content", ""))}
+                for item in body
+            ]
             return {
                 "source": "bilibili_api",
                 "format": "json",
                 "subtitle_count": len(body),
-                "subtitles": body,
+                "subtitles": converted_body,
                 "video_title": video_info['title']
             }
 
@@ -337,6 +342,8 @@ async def download_subtitle_content(
                 srt_content += f" --> {end_h:02}:{end_m:02}:{end_s:06.3f}".replace('.', ',')
                 srt_content += f"\n{content}\n\n"
 
+            # 繁简转换
+            srt_content = convert_to_simplified(srt_content)
             return {
                 "source": "bilibili_api",
                 "format": "srt",
@@ -352,6 +359,9 @@ async def download_subtitle_content(
             # 检查字符限制
             if len(text_content) > CHARACTER_LIMIT:
                 text_content = text_content[:CHARACTER_LIMIT] + "\n\n... (内容已截断)"
+
+            # 繁简转换
+            text_content = convert_to_simplified(text_content)
 
             return {
                 "source": "bilibili_api",
@@ -573,7 +583,7 @@ async def download_subtitles_with_asr(
                             {
                                 "from": seg["start"],
                                 "to": seg["end"],
-                                "content": seg["text"]
+                                "content": convert_to_simplified(seg["text"])
                             }
                             for seg in segments
                         ],
@@ -595,6 +605,8 @@ async def download_subtitles_with_asr(
                         srt_content += f" --> {end_h:02}:{end_m:02}:{end_s:06.3f}".replace('.', ',')
                         srt_content += f"\n{text}\n\n"
 
+                    # 繁简转换
+                    srt_content = convert_to_simplified(srt_content)
                     return {
                         "source": "whisper_asr",
                         "format": "srt",
@@ -605,6 +617,8 @@ async def download_subtitles_with_asr(
 
                 else:  # TEXT
                     text_content = '\n'.join(seg["text"] for seg in segments)
+                    # 繁简转换
+                    text_content = convert_to_simplified(text_content)
                     return {
                         "source": "whisper_asr",
                         "format": "text",
