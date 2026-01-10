@@ -14,19 +14,21 @@ B站字幕下载工具，支持 API 获取和 Whisper ASR 自动生成。
 
 ## 使用
 
-无需安装，使用 `uvx` 直接运行：
+使用 `uvx` 运行（首次运行自动安装，之后直接使用）：
 
 ```bash
-# 设置 SESSDATA 环境变量
+# 1. 设置 SESSDATA 环境变量
 export BILIBILI_SESSDATA="你的值"
 
-# 下载字幕到终端（优先 API，无字幕时 ASR）
+# 2. 运行命令（首次会自动安装到全局）
 uvx bilibili-captions <BV号或URL> [模型大小]
 
 # 示例
 uvx bilibili-captions BV16YC3BrEDz
 uvx bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr medium
 ```
+
+> **提示**: `uvx` 会自动下载并缓存工具，首次运行后后续使用会很快。
 
 **模型大小选项：**
 - `base` - 最快，精度较低
