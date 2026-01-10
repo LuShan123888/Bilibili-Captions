@@ -2,8 +2,8 @@ name: Publish to PyPI
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -12,7 +12,7 @@ on:
       - 'pyproject.toml'
 
 permissions:
-  contents: read
+  contents: write
   id-token: write  # 用于 Trusted Publishing
 
 jobs:
@@ -24,11 +24,41 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Auto bump version
+        run: |
+          # 获取今天的日期 (YYYYMMDD)
+          DATE=$(date +%Y%m%d)
+          # 获取当前版本号
+          CURRENT_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          # 检查当前版本是否包含今天的日期
+          if [[ "$CURRENT_VERSION" == *"0.1.$DATE"* ]]; then
+            # 提取序号并递增
+            SERIAL=$(echo $CURRENT_VERSION | awk -F. '{print $4}')
+            NEW_SERIAL=$((SERIAL + 1))
+            NEW_VERSION="0.1.$DATE.$NEW_SERIAL"
+          else
+            # 新的一天，从序号 1 开始
+            NEW_VERSION="0.1.$DATE.1"
+          fi
+          # 更新 pyproject.toml
+          sed -i "s/^version = .*/version = \"$NEW_VERSION\"/" pyproject.toml
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "版本号: $CURRENT_VERSION -> $NEW_VERSION"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: auto bump version to ${{ env.NEW_VERSION }}"
+          git push
 
       - name: Build package
         run: uv build
@@ -43,7 +73,7 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: pypi
       url: https://pypi.org/p/bilibili-captions
