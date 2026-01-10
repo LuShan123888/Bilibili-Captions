@@ -17,11 +17,11 @@ B站字幕下载工具，支持 API 获取和 Whisper ASR 自动生成。
 ### 安装
 
 ```bash
-# 使用 pip 安装（推荐）
-pip install bilibili-captions
+# 使用 uv tool 安装（推荐）
+uv tool install bilibili-captions
 
-# 或使用 uv
-uv pip install bilibili-captions
+# 或使用 pip
+pip install bilibili-captions
 ```
 
 ### 运行
@@ -117,7 +117,7 @@ cd bilibili_subtitle_fetcher
 uv sync
 
 # 安装到全局（只需一次）
-uv pip install -e .
+uv tool install .
 
 # 设置 SESSDATA
 cp .env.example .env
@@ -126,8 +126,7 @@ cp .env.example .env
 # 之后在任何地方都可以直接运行
 bilibili-captions <URL>
 
-# MCP 服务器也需要先安装到全局
-# 然后在 Claude Desktop 配置中直接使用 bilibili-captions-mcp 命令
+# MCP 服务器也已安装，可直接使用 bilibili-captions-mcp 命令
 ```
 
 ### 测试
