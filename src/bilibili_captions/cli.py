@@ -28,7 +28,7 @@ def print_result(result: dict) -> None:
             print(f"详情: {result['message']}")
         if "suggestion" in result:
             print(f"提示: {result['suggestion']}")
-        return False
+        return None
 
     video_title = result.get("video_title", "未知")
     source = result.get("source", "unknown")
@@ -49,7 +49,7 @@ def print_result(result: dict) -> None:
 
     print(f"{'='*60}")
     print(f"\n共 {subtitle_count} 条字幕")
-    return True
+    return None
 
 
 def main() -> None:

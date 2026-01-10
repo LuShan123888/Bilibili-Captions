@@ -21,8 +21,8 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "mcp>=0.1.0",
-    "httpx>=0.27.0",
+    "mcp>=1.0.0",
+    "httpx>=0.28.0",
     "faster-whisper>=1.0.0",
     "requests>=2.32.4",
     "opencc-python-reimplemented>=0.1.7",
@@ -30,8 +30,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "ruff>=0.1.0",
+    "pytest>=8.0.0",
+    "ruff>=0.9.0",
 ]
 
 [project.urls]
@@ -53,8 +53,11 @@ packages = ["src/bilibili_captions"]
 [tool.hatch.build.sources]
 "src" = ""
 
-[tool.uv]
-dev-dependencies = []
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.9.0",
+]
 
 [tool.ruff]
 line-length = 100

@@ -7,8 +7,14 @@ B站API封装模块 - 为MCP服务器和CLI提供共享功能
 """
 
 import os
+import re
+import subprocess
 import sys
-import io
+import tempfile
+import time
+import urllib.parse
+from typing import Optional, Dict, Any
+from enum import Enum
 
 # 设置环境变量确保UTF-8编码（必须在其他导入之前）
 os.environ['PYTHONIOENCODING'] = 'utf-8'
@@ -18,11 +24,10 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 
-import re
-from typing import Optional, Dict, Any, List, Tuple
-from enum import Enum
-
 import httpx
+import torch
+from faster_whisper import WhisperModel
+from opencc import OpenCC
 
 # 常量
 API_BASE_URL = "https://api.bilibili.com"
@@ -102,8 +107,6 @@ def extract_bvid(url: str) -> str:
     - https://www.bilibili.com/list/watchlater/?bvid=BV16HqFBZE6N
     - BV1xx411c7mD
     """
-    import urllib.parse
-
     # 直接BV号
     if url.startswith('BV'):
         return url
@@ -385,34 +388,12 @@ async def download_subtitle_content(
         }
 
 
-# ASR 相关功能（可选）
-try:
-    from faster_whisper import WhisperModel
-    FASTER_WHISPER_AVAILABLE = True
-except ImportError:
-    FASTER_WHISPER_AVAILABLE = False
-
-try:
-    import whisper
-    OPENAI_WHISPER_AVAILABLE = True
-except ImportError:
-    OPENAI_WHISPER_AVAILABLE = False
-
-try:
-    from opencc import OpenCC
-    OPENCC_AVAILABLE = True
-except ImportError:
-    OPENCC_AVAILABLE = False
-
-
 def convert_to_simplified(text: str) -> str:
     """将繁体中文转换为简体中文"""
-    if not OPENCC_AVAILABLE:
-        return text
     try:
         cc = OpenCC('t2s')
         return cc.convert(text)
-    except Exception:
+    except (TypeError, ValueError, RuntimeError):
         return text
 
 
@@ -422,7 +403,7 @@ async def transcribe_with_asr(
 ) -> Dict[str, Any]:
     """使用Whisper ASR生成字幕
 
-    优先使用 faster-whisper（速度更快），若不可用则降级到 openai-whisper。
+    使用 faster-whisper 进行语音识别。
 
     Args:
         audio_file: 音频文件路径
@@ -436,15 +417,7 @@ async def transcribe_with_asr(
             "duration": 180.5
         }
     """
-    if not FASTER_WHISPER_AVAILABLE and not OPENAI_WHISPER_AVAILABLE:
-        raise ValueError("未安装 Whisper 库。请使用: pip install faster-whisper")
-
-    import time
-
-    if FASTER_WHISPER_AVAILABLE:
-        return await _transcribe_with_faster_whisper(audio_file, model_size)
-    else:
-        return await _transcribe_with_openai_whisper(audio_file, model_size)
+    return await _transcribe_with_faster_whisper(audio_file, model_size)
 
 
 async def _transcribe_with_faster_whisper(
@@ -452,13 +425,10 @@ async def _transcribe_with_faster_whisper(
     model_size: str
 ) -> Dict[str, Any]:
     """使用 faster-whisper 进行转录"""
-    import torch
-    import time
-
-    # 检测设备（兼容 CPU-only torch）
+    # 检测设备
     try:
-        has_cuda = torch.cuda.is_available()
-    except AttributeError:
+        has_cuda = torch.cuda.is_available()  # type: ignore
+    except (AttributeError, TypeError):
         has_cuda = False
 
     device = "cuda" if has_cuda else "cpu"
@@ -502,40 +472,6 @@ async def _transcribe_with_faster_whisper(
     }
 
 
-async def _transcribe_with_openai_whisper(
-    audio_file: str,
-    model_size: str
-) -> Dict[str, Any]:
-    """使用 openai-whisper 进行转录"""
-    import torch
-
-    # 检测设备（兼容 CPU-only torch）
-    try:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-    except AttributeError:
-        device = "cpu"
-
-    model = whisper.load_model(model_size, device=device)
-    result = model.transcribe(audio_file, language='zh', task='transcribe')
-
-    # 转换为统一格式
-    segment_list = []
-    for seg in result['segments']:
-        segment_list.append({
-            "start": seg['start'],
-            "end": seg['end'],
-            "text": seg['text'].strip()
-        })
-
-    return {
-        "source": "whisper_asr",
-        "segments": segment_list,
-        "text": result['text'],
-        "language": result.get('language', 'zh'),
-        "duration": result.get('duration', 0)
-    }
-
-
 async def download_and_extract_audio(
     url: str,
     output_dir: str
@@ -552,8 +488,6 @@ async def download_and_extract_audio(
     Raises:
         subprocess.CalledProcessError: 下载或提取失败
     """
-    import subprocess
-
     # 获取视频信息
     info = await get_video_info(url)
     video_title = info.get("title", "video")
@@ -614,9 +548,6 @@ async def download_subtitles_with_asr(
 
     # 如果有错误（无字幕），使用ASR兜底
     if "error" in result:
-        import tempfile
-        import time
-
         # 使用临时目录
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
