@@ -14,21 +14,30 @@ B站字幕下载工具，支持 API 获取和 Whisper ASR 自动生成。
 
 ## 使用
 
-使用 `uvx` 运行（首次运行自动安装，之后直接使用）：
+### 安装
+
+```bash
+# 克隆项目
+git clone <repo_url>
+cd bilibili_subtitle_fetcher
+
+# 安装到全局（只需执行一次）
+uv pip install -e .
+```
+
+### 运行
 
 ```bash
 # 1. 设置 SESSDATA 环境变量
 export BILIBILI_SESSDATA="你的值"
 
-# 2. 运行命令（首次会自动安装到全局）
-uvx bilibili-captions <BV号或URL> [模型大小]
+# 2. 运行命令
+bilibili-captions <BV号或URL> [模型大小]
 
 # 示例
-uvx bilibili-captions BV16YC3BrEDz
-uvx bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr medium
+bilibili-captions BV16YC3BrEDz
+bilibili-captions https://www.bilibili.com/video/BV1qViQBwELr medium
 ```
-
-> **提示**: `uvx` 会自动下载并缓存工具，首次运行后后续使用会很快。
 
 **模型大小选项：**
 - `base` - 最快，精度较低
