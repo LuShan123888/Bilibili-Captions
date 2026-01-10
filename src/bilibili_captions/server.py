@@ -69,7 +69,10 @@ async def download_captions(
     """
     try:
         sessdata = get_sessdata()
-        return await download_subtitles_with_asr(url, ResponseFormat(format), model_size, sessdata)
+        # MCP 服务器禁用进度条（无终端输出）
+        return await download_subtitles_with_asr(
+            url, ResponseFormat(format), model_size, sessdata, show_progress=False
+        )
     except Exception as e:
         return {
             "error": f"下载字幕时发生错误: {type(e).__name__}",

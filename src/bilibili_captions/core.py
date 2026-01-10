@@ -26,6 +26,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 import httpx
 from faster_whisper import WhisperModel
+from tqdm import tqdm
 
 # torch 用于 CUDA 检测
 import torch
@@ -401,7 +402,8 @@ def convert_to_simplified(text: str) -> str:
 
 async def transcribe_with_asr(
     audio_file: str,
-    model_size: str = "medium"
+    model_size: str = "medium",
+    show_progress: bool = True
 ) -> Dict[str, Any]:
     """使用Whisper ASR生成字幕
 
@@ -410,6 +412,7 @@ async def transcribe_with_asr(
     Args:
         audio_file: 音频文件路径
         model_size: 模型大小 (base/small/medium/large)
+        show_progress: 是否显示进度条
 
     Returns:
         {
@@ -419,12 +422,13 @@ async def transcribe_with_asr(
             "duration": 180.5
         }
     """
-    return await _transcribe_with_faster_whisper(audio_file, model_size)
+    return await _transcribe_with_faster_whisper(audio_file, model_size, show_progress)
 
 
 async def _transcribe_with_faster_whisper(
     audio_file: str,
-    model_size: str
+    model_size: str,
+    show_progress: bool = True
 ) -> Dict[str, Any]:
     """使用 faster-whisper 进行转录"""
     # 检测设备
@@ -435,6 +439,9 @@ async def _transcribe_with_faster_whisper(
 
     device = "cuda" if has_cuda else "cpu"
     compute_type = "float16" if has_cuda else "int8"
+
+    if show_progress:
+        print(f"加载 Whisper {model_size} 模型 (设备: {device})...")
 
     model = WhisperModel(
         model_size,
@@ -451,18 +458,47 @@ async def _transcribe_with_faster_whisper(
         vad_filter=True,
         vad_parameters=dict(min_silence_duration_ms=500),
     )
-    elapsed = time.time() - start_time
 
-    # 收集所有segment
+    # 获取音频总时长（秒）
+    audio_duration = info.duration
+
+    # 收集所有 segment，带进度条
     segment_list = []
     text_lines = []
-    for seg in segments:
-        segment_list.append({
-            "start": seg.start,
-            "end": seg.end,
-            "text": seg.text.strip()
-        })
-        text_lines.append(seg.text.strip())
+
+    if show_progress and audio_duration > 0:
+        pbar = tqdm(
+            total=int(audio_duration),
+            desc="转录中",
+            unit="秒",
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}秒 [{elapsed}<{remaining}]"
+        )
+        last_end = 0
+        for seg in segments:
+            segment_list.append({
+                "start": seg.start,
+                "end": seg.end,
+                "text": seg.text.strip()
+            })
+            text_lines.append(seg.text.strip())
+            progress = int(seg.end) - last_end
+            if progress > 0:
+                pbar.update(progress)
+                last_end = int(seg.end)
+        remaining = int(audio_duration) - last_end
+        if remaining > 0:
+            pbar.update(remaining)
+        pbar.close()
+    else:
+        for seg in segments:
+            segment_list.append({
+                "start": seg.start,
+                "end": seg.end,
+                "text": seg.text.strip()
+            })
+            text_lines.append(seg.text.strip())
+
+    elapsed = time.time() - start_time
 
     return {
         "source": "whisper_asr",
@@ -476,13 +512,15 @@ async def _transcribe_with_faster_whisper(
 
 async def download_and_extract_audio(
     url: str,
-    output_dir: str
+    output_dir: str,
+    show_progress: bool = True
 ) -> tuple[str, str, str]:
     """下载B站视频并提取音频
 
     Args:
         url: B站视频URL
         output_dir: 输出目录
+        show_progress: 是否显示进度提示
 
     Returns:
         (audio_file, video_title, bvid) - 音频文件路径、视频标题、BV号
@@ -511,6 +549,8 @@ async def download_and_extract_audio(
 
     # 使用 yt-dlp 下载视频
     if not os.path.exists(video_filename):
+        if show_progress:
+            print("正在下载视频...")
         subprocess.run(
             ['yt-dlp', '-o', video_filename, url],
             check=True,
@@ -518,6 +558,8 @@ async def download_and_extract_audio(
         )
 
     # 使用 ffmpeg 提取音频
+    if show_progress:
+        print("正在提取音频...")
     subprocess.run(
         ['ffmpeg', '-y', '-i', video_filename, '-vn',
          '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1', audio_filename],
@@ -532,7 +574,8 @@ async def download_subtitles_with_asr(
     url: str,
     format: ResponseFormat = ResponseFormat.TEXT,
     model_size: str = "medium",
-    sessdata: Optional[str] = None
+    sessdata: Optional[str] = None,
+    show_progress: bool = True
 ) -> Dict[str, Any]:
     """下载字幕，优先使用API，无字幕时使用ASR生成
 
@@ -541,6 +584,7 @@ async def download_subtitles_with_asr(
         format: 输出格式 (text/srt/json)
         model_size: Whisper模型大小 (base/small/medium/large)
         sessdata: SESSDATA认证
+        show_progress: 是否显示进度条（CLI 使用，MCP 服务器可禁用）
 
     Returns:
         与 download_subtitle_content 相同格式，但 source 可能是 "whisper_asr"
@@ -554,10 +598,12 @@ async def download_subtitles_with_asr(
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
                 # 下载视频并提取音频
-                audio_file, video_title, bvid = await download_and_extract_audio(url, temp_dir)
+                audio_file, video_title, bvid = await download_and_extract_audio(
+                    url, temp_dir, show_progress
+                )
 
                 # 使用ASR生成字幕
-                asr_result = await transcribe_with_asr(audio_file, model_size)
+                asr_result = await transcribe_with_asr(audio_file, model_size, show_progress)
 
                 # 转换为请求的格式
                 segments = asr_result.get("segments", [])
