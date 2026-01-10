@@ -1,6 +1,6 @@
 [project]
 name = "bilibili-captions"
-version = "0.1.20260110.1"
+version = "0.1.20260110.2"
 description = "B站字幕下载工具，支持 API 获取和 Whisper ASR 生成"
 readme = "README.md"
 requires-python = ">=3.10"
