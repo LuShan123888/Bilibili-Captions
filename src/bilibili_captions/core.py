@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["httpx", "faster-whisper", "opencc-python-reimplemented"]
+# dependencies = ["httpx", "mlx-whisper", "opencc-python-reimplemented"]
 # -*-
 
 """
@@ -25,11 +25,8 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
 import httpx
-from faster_whisper import WhisperModel
+import mlx_whisper
 from tqdm import tqdm
-
-# torch 用于 CUDA 检测
-import torch
 from opencc import OpenCC
 
 # 常量
@@ -402,16 +399,16 @@ def convert_to_simplified(text: str) -> str:
 
 async def transcribe_with_asr(
     audio_file: str,
-    model_size: str = "medium",
+    model_size: str = "large-v3",
     show_progress: bool = True
 ) -> Dict[str, Any]:
     """使用Whisper ASR生成字幕
 
-    使用 faster-whisper 进行语音识别。
+    使用 mlx-whisper 进行语音识别（针对 Apple Silicon 优化）。
 
     Args:
         audio_file: 音频文件路径
-        model_size: 模型大小 (base/small/medium/large)
+        model_size: 模型大小 (base/small/medium/large/large-v3)
         show_progress: 是否显示进度条
 
     Returns:
@@ -422,90 +419,52 @@ async def transcribe_with_asr(
             "duration": 180.5
         }
     """
-    return await _transcribe_with_faster_whisper(audio_file, model_size, show_progress)
+    # 模型映射：model_size -> mlx-community 模型名
+    model_map = {
+        "base": "mlx-community/whisper-base-mlx",
+        "small": "mlx-community/whisper-small-mlx",
+        "medium": "mlx-community/whisper-medium-mlx",
+        "large": "mlx-community/whisper-large-v3-mlx",
+        "large-v3": "mlx-community/whisper-large-v3-mlx",
+    }
 
-
-async def _transcribe_with_faster_whisper(
-    audio_file: str,
-    model_size: str,
-    show_progress: bool = True
-) -> Dict[str, Any]:
-    """使用 faster-whisper 进行转录"""
-    # 检测设备
-    try:
-        has_cuda = torch.cuda.is_available()  # type: ignore
-    except (AttributeError, TypeError):
-        has_cuda = False
-
-    device = "cuda" if has_cuda else "cpu"
-    compute_type = "float16" if has_cuda else "int8"
+    model_path = model_map.get(model_size, "mlx-community/whisper-large-v3-mlx")
 
     if show_progress:
-        print(f"加载 Whisper {model_size} 模型 (设备: {device})...")
-
-    model = WhisperModel(
-        model_size,
-        device=device,
-        compute_type=compute_type,
-        num_workers=os.cpu_count() or 4,
-    )
+        print(f"加载 Whisper {model_size} 模型 (mlx-whisper)...")
 
     start_time = time.time()
-    segments, info = model.transcribe(
+
+    # 使用 mlx_whisper 进行转录
+    result = mlx_whisper.transcribe(
         audio_file,
-        language='zh',
-        beam_size=5,
-        vad_filter=True,
-        vad_parameters=dict(min_silence_duration_ms=500),
+        path_or_hf_repo=model_path,
+        language="zh",
+        hallucination_silence_threshold=0.5,
+        condition_on_previous_text=False,
+        verbose=show_progress,
     )
 
-    # 获取音频总时长（秒）
-    audio_duration = info.duration
+    elapsed = time.time() - start_time
 
-    # 收集所有 segment，带进度条
+    # 解析结果
+    segments = result.get("segments", [])
     segment_list = []
     text_lines = []
 
-    if show_progress and audio_duration > 0:
-        pbar = tqdm(
-            total=int(audio_duration),
-            desc="转录中",
-            unit="秒",
-            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}秒 [{elapsed}<{remaining}]"
-        )
-        last_end = 0
-        for seg in segments:
-            segment_list.append({
-                "start": seg.start,
-                "end": seg.end,
-                "text": seg.text.strip()
-            })
-            text_lines.append(seg.text.strip())
-            progress = int(seg.end) - last_end
-            if progress > 0:
-                pbar.update(progress)
-                last_end = int(seg.end)
-        remaining = int(audio_duration) - last_end
-        if remaining > 0:
-            pbar.update(remaining)
-        pbar.close()
-    else:
-        for seg in segments:
-            segment_list.append({
-                "start": seg.start,
-                "end": seg.end,
-                "text": seg.text.strip()
-            })
-            text_lines.append(seg.text.strip())
-
-    elapsed = time.time() - start_time
+    for seg in segments:
+        segment_list.append({
+            "start": seg["start"],
+            "end": seg["end"],
+            "text": seg["text"].strip()
+        })
+        text_lines.append(seg["text"].strip())
 
     return {
         "source": "whisper_asr",
         "segments": segment_list,
         "text": '\n'.join(text_lines),
-        "language": info.language,
-        "language_probability": info.language_probability,
+        "language": result.get("language", "zh"),
         "duration": elapsed
     }
 

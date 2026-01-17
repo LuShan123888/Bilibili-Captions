@@ -27,7 +27,7 @@ mcp = FastMCP("bilibili-captions")
 async def download_captions(
     url: str,
     format: Literal["text", "srt", "json"] = "text",
-    model_size: Literal["base", "small", "medium", "large"] = "medium"
+    model_size: Literal["base", "small", "medium", "large", "large-v3"] = "large-v3"
 ) -> dict:
     """下载B站视频字幕内容，支持多种格式。
 
@@ -42,8 +42,9 @@ async def download_captions(
         model_size: ASR模型大小（当API无字幕时使用）
             - "base": 最快，精度较低
             - "small": 较快
-            - "medium": 平衡（默认）
-            - "large": 最慢，精度最高
+            - "medium": 平衡
+            - "large": 同 large-v3
+            - "large-v3": 精度最高（默认，mlx-whisper 优化）
 
     Returns:
         成功时:

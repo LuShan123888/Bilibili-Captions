@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["httpx", "faster-whisper", "opencc-python-reimplemented"]
+# dependencies = ["httpx", "mlx-whisper", "opencc-python-reimplemented"]
 # -*-
 
 """
@@ -56,17 +56,17 @@ def main() -> None:
     """CLI入口点"""
     if len(sys.argv) < 2:
         print("用法: bilibili-captions <B站视频URL> [模型大小]")
-        print("模型大小可选: base, small, medium (默认), large")
+        print("模型大小可选: base, small, medium, large, large-v3 (默认)")
         sys.exit(1)
 
     video_url = sys.argv[1]
-    model_size = sys.argv[2] if len(sys.argv) > 2 else "medium"
+    model_size = sys.argv[2] if len(sys.argv) > 2 else "large-v3"
 
     # 验证模型大小
-    valid_models = ["base", "small", "medium", "large"]
+    valid_models = ["base", "small", "medium", "large", "large-v3"]
     if model_size not in valid_models:
-        print(f"警告: 无效的模型大小 '{model_size}'，使用默认 'medium' 模型")
-        model_size = "medium"
+        print(f"警告: 无效的模型大小 '{model_size}'，使用默认 'large-v3' 模型")
+        model_size = "large-v3"
 
     print(f"使用模型: {model_size}")
 
