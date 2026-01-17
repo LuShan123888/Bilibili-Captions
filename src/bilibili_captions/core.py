@@ -25,7 +25,6 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
 import httpx
-import mlx_whisper
 from tqdm import tqdm
 from opencc import OpenCC
 
@@ -419,6 +418,9 @@ async def transcribe_with_asr(
             "duration": 180.5
         }
     """
+    # 延迟导入 mlx_whisper（加载较慢）
+    import mlx_whisper
+
     # 模型映射：model_size -> mlx-community 模型名
     model_map = {
         "base": "mlx-community/whisper-base-mlx",
