@@ -30,6 +30,13 @@ def print_result(result: dict) -> None:
             print(f"提示: {result['suggestion']}")
         return None
 
+    # 打印字幕内容（ASR 已通过 verbose 输出，无需重复打印）
+    source = result.get("source", "")
+    if source != "whisper_asr":
+        content = result.get("content")
+        if content:
+            print(content)
+
     subtitle_count = result.get("subtitle_count", 0)
     print(f"\n共 {subtitle_count} 条字幕")
     return None
