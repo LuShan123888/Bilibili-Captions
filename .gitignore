@@ -35,3 +35,22 @@ outputs/
 
 # uv lock file (可选，根据需求)
 # uv.lock
+
+# Imported from /Users/cian/.gitignore_global plus shared local caches
+node_modules/
+target/
+out/
+!**/src/main/**/target/
+!**/src/test/**/target/
+!.mvn/wrapper/maven-wrapper.jar
+.history/
+# Editor directories and files
+.idea
+.vscode
+.claude
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.iml
+.cache/

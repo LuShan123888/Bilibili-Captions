@@ -8,25 +8,24 @@ import re
 import subprocess
 import tempfile
 import urllib.parse
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 import httpx
-
-# 禁用 httpx 的 HTTP 请求日志
-logging.getLogger("httpx").setLevel(logging.WARNING)
 
 from .base import SubtitleService
 from core.formatter import ResponseFormat, format_subtitle
 from core.audio import extract_audio
 from core.asr import transcribe_with_asr
 from core.logging import (
-    log_debug,
     log_success,
     log_warning,
     log_step,
 )
 from core.text import make_safe_filename
 from core.cookie import get_sessdata
+
+# 禁用 httpx 的 HTTP 请求日志
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 API_BASE_URL = "https://api.bilibili.com"
@@ -57,20 +56,33 @@ class BilibiliService(SubtitleService):
 
     def _extract_bvid(self, url: str) -> str:
         """从 URL 中提取 BV 号"""
-        if url.startswith('BV'):
-            return url
-        if '/video/' in url:
-            return url.split('/video/')[1].split('/')[0].rstrip('/')
-        if 'bvid=' in url.upper():
-            parsed = urllib.parse.urlparse(url)
-            params = urllib.parse.parse_qs(parsed.query)
-            bvid = params.get('bvid') or params.get('BVID')
-            if bvid:
-                return bvid[0]
-        last_part = url.rstrip('/').split('/')[-1].split('?')[0]
+        source = url.strip()
+        if source.startswith('BV'):
+            return source.split('?')[0].split('/')[0]
+
+        parsed = urllib.parse.urlparse(source)
+        params = urllib.parse.parse_qs(parsed.query)
+        query_bvid = None
+        for key, values in params.items():
+            if key.lower() == 'bvid' and values:
+                query_bvid = values[0]
+                break
+
+        path = parsed.path or source
+        if '/list/watchlater' in path.lower() and query_bvid:
+            return query_bvid
+
+        video_match = re.search(r'/video/(BV[a-zA-Z0-9]+)', path, re.IGNORECASE)
+        if video_match:
+            return video_match.group(1)
+
+        if query_bvid:
+            return query_bvid
+
+        last_part = path.rstrip('/').split('/')[-1].split('?')[0]
         if last_part.startswith('BV'):
             return last_part
-        raise ValueError(f"无法从 URL 中提取 BV 号: {url}")
+        raise ValueError(f"无法从 URL 中提取 BV 号: {source}")
 
     def _ensure_sessdata(self) -> str:
         """确保获取 SESSDATA，如果没有则抛出异常"""

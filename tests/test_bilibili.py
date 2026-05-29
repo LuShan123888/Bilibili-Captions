@@ -10,6 +10,7 @@ import asyncio
 import pytest
 
 from service import get_service
+from service.bilibili import BilibiliService
 from core.cookie import get_sessdata
 from core.formatter import ResponseFormat
 
@@ -23,6 +24,40 @@ def require_sessdata():
 
 VIDEO_WITH_SUBTITLES = "https://www.bilibili.com/video/BV16YC3BrEDz/"
 VIDEO_WITHOUT_SUBTITLES = "https://www.bilibili.com/video/BV1qViQBwELr/"
+WATCHLATER_VIDEO = (
+    "https://www.bilibili.com/list/watchlater/?bvid=BV1eXVh6LEwN"
+    "&oid=116656814823166"
+    "&watchlater_cfg=%7B%22viewed%22:0,%22key%22:%22%22,%22asc%22:false%7D"
+    "&vd_source=d232d8c25800736106d48d1cd29856a7"
+)
+
+
+def test_extract_bvid_from_watchlater_url():
+    """watchlater 链接应优先使用 URL 中固定的 bvid 参数"""
+    service = BilibiliService()
+
+    assert service.is_supported(WATCHLATER_VIDEO)
+    assert service._extract_bvid(WATCHLATER_VIDEO) == "BV1eXVh6LEwN"
+
+
+def test_extract_bvid_from_video_url_with_query():
+    """普通视频页带查询参数时仍只提取 BV 号"""
+    service = BilibiliService()
+
+    assert (
+        service._extract_bvid("https://www.bilibili.com/video/BV16YC3BrEDz?spm_id_from=333.999")
+        == "BV16YC3BrEDz"
+    )
+
+
+def test_extract_bvid_prefers_video_path_over_query():
+    """普通视频页优先使用路径中的 BV 号"""
+    service = BilibiliService()
+
+    assert (
+        service._extract_bvid("https://www.bilibili.com/video/BV16YC3BrEDz?bvid=BV1eXVh6LEwN")
+        == "BV16YC3BrEDz"
+    )
 
 
 @pytest.mark.asyncio
