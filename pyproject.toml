@@ -1,6 +1,6 @@
 [project]
 name = "video-captions"
-version = "0.1.20260529.1"
+version = "0.1.20260530.1"
 description = "视频字幕下载工具，支持 B站和 YouTube，API 获取和 Whisper ASR 生成"
 readme = "README.md"
 requires-python = ">=3.10"
