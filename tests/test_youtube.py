@@ -9,7 +9,7 @@
 import asyncio
 import pytest
 
-from service import get_service, get_service_name, YouTubeService
+from service import get_service, get_service_name
 from core.formatter import ResponseFormat
 
 

@@ -22,7 +22,7 @@ async def download_captions(
         url: str,
         format: Literal["text", "srt", "json"] = "text",
         model_size: Literal["base", "small", "medium", "large"] = "large",
-        browser: Literal["auto", "chrome", "edge", "firefox", "brave"] = "auto"
+        browser: Literal["auto", "arc", "chrome", "edge", "firefox", "brave"] = "arc"
 ) -> dict:
     """下载视频字幕内容，支持多种格式。
 
@@ -43,7 +43,8 @@ async def download_captions(
             - "medium": 平衡
             - "large": 精度最高（默认，mlx-whisper 优化）
         browser: 从哪个浏览器读取 Cookie
-            - "auto": 自动尝试所有浏览器（默认）
+            - "arc": 仅从 Arc 读取（默认）
+            - "auto": 自动尝试所有浏览器
             - "chrome": 仅从 Chrome 读取
             - "edge": 仅从 Edge 读取
             - "firefox": 仅从 Firefox 读取

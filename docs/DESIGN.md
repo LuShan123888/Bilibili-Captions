@@ -21,7 +21,7 @@ video-captions 是一个视频字幕获取工具，支持从 B站、YouTube 在�
 | ASR 兜底 | API 无字幕时自动切换 Whisper ASR，无需用户干预 |
 | 三入口 | CLI、MCP 和 Agent Skill 三种使用方式，覆盖终端、AI 工具和编程助手场景 |
 | 自动繁简转换 | 输出统一为简体中文，消除繁简混排问题 |
-| 多浏览器 Cookie | 自动从 Chrome/Edge/Firefox/Brave 读取登录态 |
+| 多浏览器 Cookie | 自动从 Arc/Chrome/Edge/Firefox/Brave 读取登录态 |
 | 跨 Agent 兼容 | Skill 兼容 Claude Code、Codex CLI、Gemini CLI、OpenClaw 等所有 AI 编程助手 |
 
 ---
@@ -238,7 +238,7 @@ src/
 | S6 | 本地音频文件 | `video-captions /path/to/audio.mp3` | 跳过音频提取，直接 Whisper ASR → 输出字幕 |
 | S7 | 指定输出格式 | `video-captions --format srt <URL>` | 输出 SRT 字幕格式，带时间戳 |
 | S8 | 指定 ASR 模型 | `video-captions --model small <URL>` | 使用 small 模型（更快但精度较低） |
-| S9 | 指定浏览器 | `video-captions --browser edge <URL>` | 仅从 Edge 读取 Cookie |
+| S9 | 指定浏览器 | `video-captions --browser arc <URL>` | 仅从 Arc 读取 Cookie |
 
 ### 3.2 MCP 场景
 
@@ -255,7 +255,7 @@ src/
 | A1 | 用户说"下载这个视频的字幕" | Agent 读取 SKILL.md，识别为 `video-captions "<URL>"` | 执行 CLI 命令，返回字幕内容 |
 | A2 | 用户说"生成 SRT 字幕" | Agent 匹配 `--format srt` 参数 | 执行 `video-captions --format srt "<URL>"` |
 | A3 | 用户说"转录本地录音" | Agent 识别为本地文件模式 | 执行 `video-captions "/path/to/file.mp3"` |
-| A4 | Agent 遇到 Cookie 错误 | 读取 SKILL.md 错误处理表 | 建议 `--browser chrome` 重试 |
+| A4 | Agent 遇到 Cookie 错误 | 读取 SKILL.md 错误处理表 | 建议 `--browser arc` 重试 |
 
 ### 3.4 边界场景
 
@@ -367,8 +367,8 @@ ffmpeg -y -i <video> -vn -acodec pcm_s16le -ar 16000 -ac 1 <output.wav>
 2. 环境变量 `BILIBILI_SESSDATA` 回退
 
 **浏览器支持**（`browser.py`）：
-- 通过 `browser-cookie3` 库解密 Chromium 系 Cookie（macOS Keychain 加密）
-- auto 模式尝试顺序：Chrome → Edge → Brave → Firefox
+- Arc 通过 `yt-dlp` 的 Chromium Cookie 解密能力读取，Chrome/Edge/Firefox/Brave 通过 `browser-cookie3` 读取
+- 默认浏览器为 Arc；显式传 `auto` 时尝试顺序：Arc → Chrome → Edge → Brave → Firefox
 - 记录最后成功的浏览器名称，便于日志输出
 
 ### 5.4 字幕格式化 (formatter.py)
@@ -522,7 +522,7 @@ API 字幕获取 → 失败/无字幕
 | 维度 | B站 | YouTube |
 |------|-----|---------|
 | Cookie 用途 | SESSDATA（API 认证） | 视频下载认证 |
-| 读取方式 | browser-cookie3 解密 → Python httpx 发送 | yt-dlp `--cookies-from-browser` |
+| 读取方式 | Arc 走 yt-dlp Cookie 解密，其他浏览器走 browser-cookie3 → Python httpx 发送 | Arc 导出临时 cookie 文件，其他指定浏览器走 yt-dlp `--cookies-from-browser` |
 | 原因 | B站 API 需要手动构建 HTTP 请求 | yt-dlp 内置了完整的 YouTube Cookie 处理 |
 
 结论：B站因为直接调用 API，需要自己获取和解密 Cookie；YouTube 的 Cookie 处理完全委托给 yt-dlp。

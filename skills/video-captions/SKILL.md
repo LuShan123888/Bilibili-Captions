@@ -30,7 +30,7 @@ uv add video-captions
 | Download subtitles (text) | `video-captions "<URL>"` |
 | Download subtitles (SRT) | `video-captions --format srt "<URL>"` |
 | Download subtitles (JSON) | `video-captions --format json "<URL>"` |
-| Specify browser for cookies | `video-captions --browser chrome "<URL>"` |
+| Specify browser for cookies | `video-captions --browser arc "<URL>"` |
 | Transcribe local file | `video-captions "/path/to/video.mp4"` |
 | Use smaller ASR model | `video-captions --model small "/path/to/file.mp4"` |
 | Show video title & subtitle count | `video-captions -v "<URL>"` |
@@ -47,7 +47,7 @@ uv add video-captions
 
 | Flag | Values | Default | Description |
 |---|---|---|---|
-| `--browser` | `auto`, `chrome`, `edge`, `firefox`, `brave` | `auto` | Browser to read cookies from |
+| `--browser` | `arc`, `auto`, `chrome`, `edge`, `firefox`, `brave` | `arc` | Browser to read cookies from |
 | `--model` | `base`, `small`, `medium`, `large` | `large` | Whisper ASR model size (used when no API subtitles) |
 | `--format` | `text`, `srt`, `json` | `text` | Output format |
 | `-v`, `--verbose` | flag | off | Show video title and subtitle count |
@@ -69,13 +69,14 @@ uv add video-captions
 
 Some videos require login cookies to access subtitles. The tool auto-reads cookies from browsers:
 
-- `auto` (default) — tries all installed browsers
+- `arc` (default) — use Arc cookies
+- `auto` — tries all installed browsers
 - `chrome`, `edge`, `firefox`, `brave` — use a specific browser
 
 If subtitle access fails, try specifying a browser where you're logged in:
 
 ```bash
-video-captions --browser chrome "https://www.bilibili.com/video/BV1xx"
+video-captions --browser arc "https://www.bilibili.com/video/BV1xx"
 ```
 
 ## ASR Model Sizes
@@ -118,7 +119,7 @@ video-captions --format json "https://www.bilibili.com/video/BV16YC3BrEDz"
 ### 5. Handle cookie-protected content
 
 ```bash
-video-captions --browser edge "https://www.bilibili.com/video/BV1xx"
+video-captions --browser arc "https://www.bilibili.com/video/BV1xx"
 ```
 
 ## Error Handling

@@ -1,8 +1,9 @@
 """
 浏览器 Cookie 读取模块
-支持从 Chrome、Edge、Firefox、Brave 浏览器读取 B站 SESSDATA
+支持从 Arc、Chrome、Edge、Firefox、Brave 浏览器读取 B站 SESSDATA
 """
 
+from http.cookiejar import MozillaCookieJar
 import os
 import shutil
 import sqlite3
@@ -12,12 +13,141 @@ from typing import Optional
 from pathlib import Path
 
 BILIBILI_DOMAIN = ".bilibili.com"
+ARC_PROFILE = Path("~/Library/Application Support/Arc/User Data/Default").expanduser()
+ARC_BROWSER_DIR = ARC_PROFILE.parent
+
+
+class QuietCookieLogger:
+    """Suppress yt-dlp cookie extraction logs."""
+
+    def debug(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def info(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def warning(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def error(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def progress_bar(self) -> None:
+        return None
 
 
 def _log_debug(message: str) -> None:
     """打印调试日志"""
     from .logging import log_debug as _ld
+
     _ld(f"[browser] {message}")
+
+
+def _cookie_matches_domain(cookie_domain: str, domain_suffix: str) -> bool:
+    domain = cookie_domain.lstrip(".").lower()
+    suffix = domain_suffix.lstrip(".").lower()
+    return domain == suffix or domain.endswith(f".{suffix}")
+
+
+def load_arc_cookies(
+    domain_suffix: Optional[str] = None,
+    required_cookie_names: Optional[set[str]] = None,
+    log: bool = True,
+) -> Optional[MozillaCookieJar]:
+    """读取 Arc Cookie，可按域名和 Cookie 名过滤。
+
+    Arc 基于 Chromium，但 yt-dlp/browser-cookie3 不直接把它作为标准浏览器暴露。
+    这里复用 yt-dlp 的 Chromium Cookie 解密能力，并临时把浏览器目录指向 Arc。
+    """
+    if not (ARC_PROFILE / "Cookies").exists():
+        if log:
+            _log_debug("Arc Cookie 数据库不存在")
+        return None
+
+    try:
+        from yt_dlp import cookies as ytdlp_cookies
+    except Exception as exc:
+        if log:
+            _log_debug(f"yt-dlp Python 模块不可用，无法读取 Arc Cookie: {exc}")
+        return None
+
+    original_settings = ytdlp_cookies._get_chromium_based_browser_settings
+
+    def arc_settings(browser_name: str) -> dict[str, object]:
+        return {
+            "browser_dir": str(ARC_BROWSER_DIR),
+            "keyring_name": "Arc",
+            "supports_profiles": True,
+        }
+
+    try:
+        ytdlp_cookies._get_chromium_based_browser_settings = arc_settings
+        source_jar = ytdlp_cookies.extract_cookies_from_browser(
+            "chrome",
+            profile=str(ARC_PROFILE),
+            logger=QuietCookieLogger(),
+        )
+    except Exception as exc:
+        if log:
+            _log_debug(f"Arc Cookie 读取失败: {type(exc).__name__}: {exc}")
+        return None
+    finally:
+        ytdlp_cookies._get_chromium_based_browser_settings = original_settings
+
+    filtered = MozillaCookieJar()
+    matched_names: set[str] = set()
+    for cookie in source_jar:
+        if domain_suffix and not _cookie_matches_domain(cookie.domain, domain_suffix):
+            continue
+        filtered.set_cookie(cookie)
+        matched_names.add(cookie.name)
+
+    if len(filtered) == 0:
+        if log:
+            suffix = domain_suffix or "all domains"
+            _log_debug(f"Arc 未找到匹配 Cookie: {suffix}")
+        return None
+    if required_cookie_names and not required_cookie_names.issubset(matched_names):
+        if log:
+            missing = ", ".join(sorted(required_cookie_names - matched_names))
+            _log_debug(f"Arc Cookie 缺少必要字段: {missing}")
+        return None
+    return filtered
+
+
+def export_arc_cookies(
+    cookie_file: Path,
+    domain_suffix: Optional[str] = None,
+    required_cookie_names: Optional[set[str]] = None,
+    log: bool = True,
+) -> bool:
+    """导出 Arc Cookie 为 Netscape cookie 文件，供 yt-dlp --cookies 使用。"""
+    jar = load_arc_cookies(domain_suffix, required_cookie_names, log)
+    if jar is None:
+        return False
+
+    cookie_file.parent.mkdir(parents=True, exist_ok=True)
+    jar.filename = str(cookie_file)
+    jar.save(ignore_discard=True, ignore_expires=True)
+    return True
+
+
+def get_arc_cookie(log: bool = True) -> Optional[str]:
+    """从 Arc 浏览器读取 B站 SESSDATA。"""
+    jar = load_arc_cookies(
+        BILIBILI_DOMAIN,
+        required_cookie_names={"SESSDATA"},
+        log=log,
+    )
+    if jar is None:
+        return None
+
+    for cookie in jar:
+        if cookie.name == "SESSDATA":
+            if log:
+                _log_debug("从 Arc 找到 SESSDATA")
+            return cookie.value
+    return None
 
 
 def _get_chromium_cookie_file(browser_name: str) -> Optional[Path]:
@@ -78,7 +208,7 @@ def _extract_sessdata_from_sqlite(cookie_file: Path) -> Optional[str]:
         SESSDATA 字符串，未找到返回 None
     """
     # Chrome/Edge 在使用时可能锁定数据库，需要复制到临时文件
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_file:
         temp_path = temp_file.name
 
     try:
@@ -95,10 +225,7 @@ def _extract_sessdata_from_sqlite(cookie_file: Path) -> Optional[str]:
             return None
 
         # 查询 SESSDATA (Chromium 格式)
-        cursor.execute(
-            "SELECT value FROM cookies WHERE host_key LIKE ?",
-            (f"%{BILIBILI_DOMAIN}",)
-        )
+        cursor.execute("SELECT value FROM cookies WHERE host_key LIKE ?", (f"%{BILIBILI_DOMAIN}",))
 
         for row in cursor.fetchall():
             value = row[0]
@@ -114,7 +241,7 @@ def _extract_sessdata_from_sqlite(cookie_file: Path) -> Optional[str]:
     finally:
         try:
             conn.close()
-        except:
+        except Exception:
             pass
         if os.path.exists(temp_path):
             os.unlink(temp_path)
@@ -131,6 +258,7 @@ def _try_browser_cookie3(log: bool = True) -> Optional[str]:
     """
     try:
         import browser_cookie3
+
         if log:
             _log_debug("browser-cookie3 库已加载")
 
@@ -148,7 +276,7 @@ def _try_browser_cookie3(log: bool = True) -> Optional[str]:
                 if log:
                     _log_debug(f"尝试从 {browser_name} 读取...")
                 # 抑制 browser_cookie3 内部的 tqdm 进度条输出
-                with open(os.devnull, 'w') as devnull:
+                with open(os.devnull, "w") as devnull:
                     old_stderr = sys.stderr
                     sys.stderr = devnull
                     try:
@@ -156,7 +284,7 @@ def _try_browser_cookie3(log: bool = True) -> Optional[str]:
                     finally:
                         sys.stderr = old_stderr
                 for cookie in cookie_jar:
-                    if cookie.name == 'SESSDATA':
+                    if cookie.name == "SESSDATA":
                         if log:
                             _log_debug(f"从 {browser_name} 找到 SESSDATA")
                         return cookie.value
@@ -231,7 +359,7 @@ def get_brave_cookie(log: bool = True) -> Optional[str]:
 _last_successful_browser: Optional[str] = None
 
 
-def get_browser_name(browser: str = "auto") -> Optional[str]:
+def get_browser_name(browser: str = "arc") -> Optional[str]:
     """获取最后成功读取 Cookie 的浏览器名称
 
     Args:
@@ -244,11 +372,11 @@ def get_browser_name(browser: str = "auto") -> Optional[str]:
     return _last_successful_browser or browser
 
 
-def get_sessdata_from_browser(browser: str = "auto", log: bool = True) -> Optional[str]:
+def get_sessdata_from_browser(browser: str = "arc", log: bool = True) -> Optional[str]:
     """从浏览器读取 SESSDATA
 
     Args:
-        browser: 浏览器类型 ("auto", "chrome", "edge", "firefox", "brave")
+        browser: 浏览器类型 ("auto", "arc", "chrome", "edge", "firefox", "brave")
                 auto 模式会自动尝试所有浏览器
         log: 是否打印日志
 
@@ -259,12 +387,14 @@ def get_sessdata_from_browser(browser: str = "auto", log: bool = True) -> Option
     browsers = []
 
     if browser == "auto":
-        browsers = ["chrome", "edge", "brave", "firefox"]
+        browsers = ["arc", "chrome", "edge", "brave", "firefox"]
     else:
         browsers = [browser.lower()]
 
     for browser_name in browsers:
-        if browser_name == "chrome":
+        if browser_name == "arc":
+            sessdata = get_arc_cookie(log)
+        elif browser_name == "chrome":
             sessdata = get_chrome_cookie(log)
         elif browser_name == "edge":
             sessdata = get_edge_cookie(log)
@@ -286,10 +416,14 @@ def list_available_browsers() -> list:
     """列出系统中可用的浏览器
 
     Returns:
-        可用浏览器列表，如 ["chrome", "edge"]
+        可用浏览器列表，如 ["arc", "chrome", "edge"]
     """
     home = Path.home()
     available = []
+
+    # 检查 Arc
+    if ARC_PROFILE.exists():
+        available.append("arc")
 
     # 检查 Chrome
     chrome_path = home / "Library" / "Application Support" / "Google" / "Chrome"

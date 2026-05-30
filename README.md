@@ -45,7 +45,7 @@ video-captions /path/to/video.mp4
 video-captions /path/to/audio.mp3
 
 # 指定浏览器读取 Cookie（可选）
-video-captions --browser chrome <URL>
+video-captions --browser arc <URL>
 
 # 指定输出格式
 video-captions --format srt <URL>      # SRT 字幕格式
@@ -62,7 +62,7 @@ video-captions --verbose <URL>
 
 | 选项 | 说明 |
 |------|------|
-| `--browser` | 从浏览器读取 Cookie: `auto`(默认) / `chrome` / `edge` / `firefox` / `brave` |
+| `--browser` | 从浏览器读取 Cookie: `arc`(默认) / `auto` / `chrome` / `edge` / `firefox` / `brave` |
 | `--model` | ASR 模型: `base` / `small` / `medium` / `large`(默认) |
 | `--format` | 输出格式: `text`(默认) / `srt` / `json` |
 | `--verbose, -v` | 显示详细日志 |
@@ -125,7 +125,7 @@ uv tool install video-captions
 | `url`        | 必需 | 视频 URL 或本地文件路径                                       |
 | `format`     | 可选 | `text`(默认) / `srt` / `json`                          |
 | `model_size` | 可选 | `base` / `small` / `medium` / `large`(默认)            |
-| `browser`    | 可选 | `auto`(默认) / `chrome` / `edge` / `firefox` / `brave` |
+| `browser`    | 可选 | `arc`(默认) / `auto` / `chrome` / `edge` / `firefox` / `brave` |
 
 **返回示例：**
 
@@ -253,7 +253,7 @@ pytest tests/
 1. 在浏览器中登录 [B站](https://www.bilibili.com/)
 2. 直接运行 `video-captions <视频链接>`
 
-支持浏览器：Chrome、Edge、Firefox、Brave
+支持浏览器：Arc、Chrome、Edge、Firefox、Brave
 
 **B站（环境变量，备选）**
 
@@ -279,6 +279,7 @@ YouTube 视频通常不需要登录。对于年龄限制视频，工具会自动
 | `httpx`                       | >=0.28.1 | HTTP 客户端               |
 | `mlx-whisper`                 | >=0.4.0  | 语音识别（Apple Silicon 优化） |
 | `opencc-python-reimplemented` | >=0.1.7  | 繁简转换                   |
+| `yt-dlp`                      | >=2024.1.1 | 视频下载与 Arc Cookie 解密辅助 |
 | `browser-cookie3`             | >=0.19.0 | 浏览器 Cookie 读取          |
 
 > **注意：** ASR 功能使用 mlx-whisper，仅支持 Apple Silicon (M1/M2/M3/M4) Mac。
@@ -338,7 +339,7 @@ video-captions /path/to/video.mp4
 video-captions /path/to/audio.mp3
 
 # Specify browser for Cookie (optional)
-video-captions --browser chrome <URL>
+video-captions --browser arc <URL>
 
 # Specify output format
 video-captions --format srt <URL>      # SRT subtitle format
@@ -355,7 +356,7 @@ video-captions --verbose <URL>
 
 | Option | Description |
 |--------|-------------|
-| `--browser` | Read Cookie from browser: `auto`(default) / `chrome` / `edge` / `firefox` / `brave` |
+| `--browser` | Read Cookie from browser: `arc`(default) / `auto` / `chrome` / `edge` / `firefox` / `brave` |
 | `--model` | ASR model: `base` / `small` / `medium` / `large`(default) |
 | `--format` | Output format: `text`(default) / `srt` / `json` |
 | `--verbose, -v` | Show verbose logs |
@@ -418,7 +419,7 @@ Download video subtitles, supports Bilibili, YouTube, and local files.
 | `url`        | Required | Video URL or local file path                              |
 | `format`     | Optional | `text`(default) / `srt` / `json`                          |
 | `model_size` | Optional | `base` / `small` / `medium` / `large`(default)            |
-| `browser`    | Optional | `auto`(default) / `chrome` / `edge` / `firefox` / `brave` |
+| `browser`    | Optional | `arc`(default) / `auto` / `chrome` / `edge` / `firefox` / `brave` |
 
 **Response example:**
 
@@ -546,7 +547,7 @@ By default, the tool automatically reads SESSDATA from your browser. You only ne
 1. Login to [Bilibili](https://www.bilibili.com/) in your browser
 2. Run `video-captions <video_url>`
 
-Supported browsers: Chrome, Edge, Firefox, Brave
+Supported browsers: Arc, Chrome, Edge, Firefox, Brave
 
 **Bilibili (Environment variable, alternative)**
 
@@ -573,6 +574,7 @@ from the browser.
 | `httpx`                       | >=0.28.1 | HTTP client                                  |
 | `mlx-whisper`                 | >=0.4.0  | Speech recognition (Apple Silicon optimized) |
 | `opencc-python-reimplemented` | >=0.1.7  | Traditional/Simplified conversion            |
+| `yt-dlp`                      | >=2024.1.1 | Video download and Arc cookie extraction   |
 | `browser-cookie3`             | >=0.19.0 | Browser cookie reading                       |
 
 > **Note:** ASR uses mlx-whisper, which only supports Apple Silicon (M1/M2/M3/M4) Macs.

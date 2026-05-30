@@ -48,15 +48,15 @@ def main() -> None:
 示例:
   video-captions https://www.bilibili.com/video/BV1xx
   video-captions --format json https://youtube.com/watch?v=xxx
-  video-captions --browser chrome --format srt /path/to/video.mp4
+  video-captions --browser arc --format srt /path/to/video.mp4
   video-captions --model small -v https://youtu.be/xxx""",
     )
     parser.add_argument("source", help="视频 URL 或本地文件路径")
     parser.add_argument(
         "--browser",
-        choices=["auto", "chrome", "edge", "firefox", "brave"],
-        default="auto",
-        help="从浏览器读取 Cookie（默认 auto）",
+        choices=["auto", "arc", "chrome", "edge", "firefox", "brave"],
+        default="arc",
+        help="从浏览器读取 Cookie（默认 arc）",
     )
     parser.add_argument(
         "--model",

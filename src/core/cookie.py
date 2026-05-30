@@ -8,11 +8,11 @@ from typing import Optional
 from .logging import log_step, log_success, log_warning, log_debug
 
 
-def get_sessdata(browser: Optional[str] = "auto") -> Optional[str]:
+def get_sessdata(browser: Optional[str] = "arc") -> Optional[str]:
     """获取 SESSDATA，按优先级从浏览器、环境变量读取
 
     Args:
-        browser: 浏览器类型 ("auto", "chrome", "edge", "firefox", "brave")
+        browser: 浏览器类型 ("arc", "auto", "chrome", "edge", "firefox", "brave")
 
     Returns:
         SESSDATA 字符串，未找到返回 None
@@ -22,7 +22,7 @@ def get_sessdata(browser: Optional[str] = "auto") -> Optional[str]:
 
 
 def get_sessdata_with_source(
-    browser: Optional[str] = "auto",
+    browser: Optional[str] = "arc",
     log: bool = True
 ) -> tuple[Optional[str], Optional[str]]:
     """获取 SESSDATA 及其来源
@@ -71,7 +71,7 @@ def get_sessdata_with_source(
     return None, None
 
 
-def require_sessdata(browser: Optional[str] = "auto") -> str:
+def require_sessdata(browser: Optional[str] = "arc") -> str:
     """获取 SESSDATA，如果没有找到则抛出异常
 
     Args:

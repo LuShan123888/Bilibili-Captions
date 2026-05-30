@@ -2148,6 +2148,7 @@ dependencies = [
     { name = "requests" },
     { name = "tqdm" },
     { name = "urllib3" },
+    { name = "yt-dlp" },
 ]
 
 [package.optional-dependencies]
@@ -2175,6 +2176,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
     { name = "urllib3", specifier = ">=2.6.0" },
+    { name = "yt-dlp", specifier = ">=2024.1.1" },
 ]
 provides-extras = ["dev"]
 
@@ -2194,4 +2196,13 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d4/66/6364deb0a03415f96c66803d8c4379f808f2401da3bdb183348487b10510/WMI-1.5.1.tar.gz", hash = "sha256:b6a6be5711b1b6c8d55bda7a8befd75c48c12b770b9d227d31c1737dbf0d40a6", size = 26254, upload-time = "2020-04-28T08:22:58.096Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ee/b9/a80d1ed4d115dac8e2ac08d16af046a77ab58e3d186e22395bf2add24090/WMI-1.5.1-py2.py3-none-any.whl", hash = "sha256:1d6b085e5c445141c475476000b661f60fff1aaa19f76bf82b7abb92e0ff4942", size = 28912, upload-time = "2020-04-28T08:22:56.055Z" },
+]
+
+[[package]]
+name = "yt-dlp"
+version = "2026.3.17"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/34/7c6b4e3f89cb6416d2cd7ab6dab141a1df97ab0fb22d15816db2c92148c9/yt_dlp-2026.3.17.tar.gz", hash = "sha256:ba7aa31d533f1ffccfe70e421596d7ca8ff0bf1398dc6bb658b7d9dec057d2c9", size = 3119221, upload-time = "2026-03-17T23:43:00.244Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/13/5093bcb954878e50f7217fd2ab94282b53934022e4e4a03265582da83bf5/yt_dlp-2026.3.17-py3-none-any.whl", hash = "sha256:32992db94303a8a5d211a183f2174834fe7f8c29d83ed2e7a324eae97a8f26d8", size = 3315134, upload-time = "2026-03-17T23:42:57.863Z" },
 ]

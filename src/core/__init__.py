@@ -19,9 +19,11 @@ from .asr import transcribe_with_asr
 from .cookie import get_sessdata, get_sessdata_with_source, require_sessdata
 from .formatter import format_subtitle, ResponseFormat
 from .browser import (
+    export_arc_cookies,
     get_sessdata_from_browser,
     get_browser_name,
     list_available_browsers,
+    load_arc_cookies,
 )
 
 __all__ = [
@@ -47,9 +49,11 @@ __all__ = [
     "get_sessdata_with_source",
     "require_sessdata",
     # Browser
+    "export_arc_cookies",
     "get_sessdata_from_browser",
     "get_browser_name",
     "list_available_browsers",
+    "load_arc_cookies",
     # Formatter
     "format_subtitle",
     "ResponseFormat",

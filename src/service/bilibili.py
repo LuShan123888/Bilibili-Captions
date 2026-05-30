@@ -23,6 +23,7 @@ from core.logging import (
 )
 from core.text import make_safe_filename
 from core.cookie import get_sessdata
+from core.ytdlp_cookie import ytdlp_cookie_args
 
 # 禁用 httpx 的 HTTP 请求日志
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -34,7 +35,7 @@ API_BASE_URL = "https://api.bilibili.com"
 class BilibiliService(SubtitleService):
     """B站字幕服务"""
 
-    def __init__(self, browser: Optional[str] = "auto"):
+    def __init__(self, browser: Optional[str] = "arc"):
         self.browser = browser
         self._sessdata = None
 
@@ -268,9 +269,23 @@ class BilibiliService(SubtitleService):
         if show_progress:
             log_step("正在下载视频")
 
-        result = subprocess.run(['yt-dlp', '--quiet', '--no-progress', '-o', video_filename, f"https://www.bilibili.com/video/{bvid}"], capture_output=True)
+        with ytdlp_cookie_args(
+            self.browser,
+            domain_suffix="bilibili.com",
+            required_cookie_names={"SESSDATA"},
+        ) as cookie_args:
+            cmd = [
+                'yt-dlp',
+                '--quiet',
+                '--no-progress',
+                '-o',
+                video_filename,
+                *cookie_args,
+                f"https://www.bilibili.com/video/{bvid}",
+            ]
+            result = subprocess.run(cmd, capture_output=True)
         if result.returncode != 0:
-            raise subprocess.CalledProcessError(result.returncode, result.args, stderr=result.stderr.decode('utf-8', errors='ignore'))
+            raise subprocess.CalledProcessError(result.returncode, cmd, stderr=result.stderr.decode('utf-8', errors='ignore'))
 
         return video_filename, video_title, bvid
 

@@ -22,7 +22,7 @@ _SERVICE_REGISTRY: Dict[str, Type[SubtitleService]] = {
 
 def get_service(
     source: str,
-    browser: Optional[str] = "auto"
+    browser: Optional[str] = "arc"
 ) -> Optional[SubtitleService]:
     """根据来源获取对应的服务实例
 
@@ -53,7 +53,7 @@ def get_service(
 
 def get_service_by_name(
     name: str,
-    browser: Optional[str] = "auto"
+    browser: Optional[str] = "arc"
 ) -> Optional[SubtitleService]:
     """根据服务名称获取服务实例
 

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 从 API 直接获取字幕，无字幕时使用 Whisper ASR 自动生成
 - 自动繁简转换
 - 提供 CLI 和 MCP 两种使用方式
-- 支持自动从浏览器读取 Cookie（Chrome、Edge、Firefox、Brave）
+- 支持自动从浏览器读取 Cookie（Arc、Chrome、Edge、Firefox、Brave）
 
 **Python 版本：** >=3.10
 **系统依赖：** yt-dlp, ffmpeg（`brew install yt-dlp ffmpeg`）
@@ -60,7 +60,7 @@ uv sync --dev        # 安装开发依赖（pytest, ruff）
 ```bash
 # CLI 运行
 uv run video-captions <URL>
-uv run video-captions --browser chrome --format srt --model small <URL>
+uv run video-captions --browser arc --format srt --model small <URL>
 
 # MCP 服务器
 uv run video-captions-mcp
@@ -103,7 +103,7 @@ make clean              # 清理构建文件
 
 | 选项 | 说明 |
 |------|------|
-| `--browser` | 从浏览器读取 Cookie: `auto`(默认) / `chrome` / `edge` / `firefox` / `brave` |
+| `--browser` | 从浏览器读取 Cookie: `arc`(默认) / `auto` / `chrome` / `edge` / `firefox` / `brave` |
 | `--model` | ASR 模型: `base` / `small` / `medium` / `large`(默认) |
 | `--format` | 输出格式: `text`(默认) / `srt` / `json` |
 | `--verbose, -v` | 显示详细日志 |
@@ -116,6 +116,7 @@ make clean              # 清理构建文件
 
 **Python 依赖：**
 - **mlx-whisper** (>=0.4.0): ASR 语音识别（Apple Silicon 优化）
+- **yt-dlp** (>=2024.1.1): 视频下载与 Arc Cookie 解密辅助
 - **browser-cookie3** (>=0.19.0): 从浏览器读取加密 Cookie
 - **opencc-python-reimplemented** (>=0.1.7): 繁简转换
 - **mcp** (>=1.0.0): MCP 协议支持
