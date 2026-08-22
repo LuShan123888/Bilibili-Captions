@@ -8,7 +8,6 @@ video-captions 是一个视频字幕获取工具，支持从 B站、YouTube 在�
 
 | 用户 | 场景 |
 |------|------|
-| AI 编程助手用户 | 通过 Agent Skill 获取视频字幕，自然语言交互 |
 | AI 编码工具用户 | 通过 MCP 接口获取视频字幕，用于内容分析、文章生成等 |
 | 命令行开发者 | 通过 CLI 快速获取视频字幕内容 |
 | 内容创作者 | 提取视频字幕用于文案整理、翻译参考 |
@@ -19,10 +18,9 @@ video-captions 是一个视频字幕获取工具，支持从 B站、YouTube 在�
 |------|------|
 | API 优先 | 优先从平台 API 获取结构化字幕，速度快、质量高 |
 | ASR 兜底 | API 无字幕时自动切换 Whisper ASR，无需用户干预 |
-| 三入口 | CLI、MCP 和 Agent Skill 三种使用方式，覆盖终端、AI 工具和编程助手场景 |
+| 双入口 | CLI 和 MCP 两种使用方式，覆盖终端和 AI 工具场景 |
 | 自动繁简转换 | 输出统一为简体中文，消除繁简混排问题 |
 | 多浏览器 Cookie | 自动从 Arc/Chrome/Edge/Firefox/Brave 读取登录态 |
-| 跨 Agent 兼容 | Skill 兼容 Claude Code、Codex CLI、Gemini CLI、OpenClaw 等所有 AI 编程助手 |
 
 ---
 
@@ -31,17 +29,17 @@ video-captions 是一个视频字幕获取工具，支持从 B站、YouTube 在�
 ### 2.1 三层架构
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│                      Handler 层 (接入层)                       │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │   CLI 入口    │  │  MCP 入口     │  │ Agent Skill  │         │
-│  │  cli.py      │  │  mcp.py      │  │  SKILL.md    │         │
-│  │  argparse    │  │  FastMCP     │  │  跨 Agent    │         │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘         │
-└─────────┼─────────────────┼─────────────────┼──────────────────┘
-          │                 │                 │
-          └─────────────────┼─────────────────┘
-                            │
+┌────────────────────────────────────────────┐
+│              Handler 层 (接入层)            │
+│  ┌──────────────┐      ┌──────────────┐     │
+│  │   CLI 入口    │      │   MCP 入口    │     │
+│  │  cli.py      │      │  mcp.py      │     │
+│  │  argparse    │      │  FastMCP     │     │
+│  └──────┬───────┘      └──────┬───────┘     │
+└─────────┼─────────────────────┼─────────────┘
+          │                     │
+          └──────────┬──────────┘
+                     │
 ┌────────────────────┼────────────────────────────────────┐
 │                    Service 层 (业务层)                    │
 │                     │                                    │
@@ -83,7 +81,7 @@ video-captions 是一个视频字幕获取工具，支持从 B站、YouTube 在�
 └─────────────────────────────────────────────────────────┘
 ```
 
-**关键设计决策**：Handler 层只做参数解析和结果展示，所有业务逻辑在 Service 层实现，通用功能下沉到 Core 层。三个层之间通过明确的接口通信，互不耦合。Agent Skill 通过 SKILL.md 描述文件封装 CLI 调用，由各 AI 编程助手读取后执行，不引入额外代码依赖。
+**关键设计决策**：Handler 层只做参数解析和结果展示，所有业务逻辑在 Service 层实现，通用功能下沉到 Core 层。三个层之间通过明确的接口通信，互不耦合。CLI 通过 `--help` 直接提供完整的命令和参数说明，无需额外的 Agent 封装。
 
 ### 2.2 服务工厂与注册表
 
@@ -185,7 +183,6 @@ _SERVICE_REGISTRY: Dict[str, Type[SubtitleService]] = {
 | 代码质量 | ruff (lint + format) | 快速 |
 | 测试 | pytest | 主流 |
 | CI/CD | GitHub Actions | 自动构建发布到 PyPI |
-| Skill 分发 | sync-skills | 跨 Agent Skill 同步 |
 
 ### 2.6 包结构
 
@@ -216,12 +213,6 @@ src/
 - `video-captions` → `handler.cli:main`
 - `video-captions-mcp` → `handler.mcp:main`
 
-**Agent Skill**：
-- 位置：`skills/video-captions/SKILL.md`
-- 兼容：Claude Code、Codex CLI、Gemini CLI、OpenClaw
-- 分发：通过 [sync-skills](https://github.com/LuShan123888/sync-skills) 自动同步到各 Agent Skill 目录
-- 原理：纯声明式 Markdown，描述 CLI 命令、参数和用法，Agent 读取后直接调用 `video-captions` 命令
-
 ---
 
 ## 3. 用户场景与预期行为
@@ -248,16 +239,7 @@ src/
 | M2 | AI 转录本地文件 | `transcribe_local_file(file_path=...)` | 返回 ASR 生成的字幕，show_progress=False 避免干扰输出 |
 | M3 | 不支持的 URL | `download_captions(url=...)` | 返回 `{"error": "...", "message": "...", "suggestion": "..."}` |
 
-### 3.3 Agent Skill 场景
-
-| # | 场景 | Agent 行为 | 预期行为 |
-|---|------|-----------|----------|
-| A1 | 用户说"下载这个视频的字幕" | Agent 读取 SKILL.md，识别为 `video-captions "<URL>"` | 执行 CLI 命令，返回字幕内容 |
-| A2 | 用户说"生成 SRT 字幕" | Agent 匹配 `--format srt` 参数 | 执行 `video-captions --format srt "<URL>"` |
-| A3 | 用户说"转录本地录音" | Agent 识别为本地文件模式 | 执行 `video-captions "/path/to/file.mp3"` |
-| A4 | Agent 遇到 Cookie 错误 | 读取 SKILL.md 错误处理表 | 建议 `--browser arc` 重试 |
-
-### 3.4 边界场景
+### 3.3 边界场景
 
 | # | 场景 | 预期行为 |
 |---|------|----------|
@@ -547,7 +529,6 @@ git push main
     → GitHub Actions: uv build
     → GitHub Actions: pypi-publish (Trusted Publishing)
     → 用户: pip install video-captions / uv tool install video-captions
-    → Skill: sync-skills 同步到各 Agent（Claude Code / Codex CLI / Gemini CLI / OpenClaw）
 ```
 
 ### 10.3 安装方式

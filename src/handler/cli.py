@@ -45,29 +45,50 @@ def main() -> None:
         description="视频字幕下载工具，支持 B站、YouTube 和本地文件",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
+工作方式:
+  在线视频  优先获取平台字幕；没有字幕时自动下载音频并使用 Whisper ASR 转写
+  本地文件  直接使用 Whisper ASR 转写；--model 仅在 ASR 转写时生效
+  Cookie    --browser 仅用于 B站或 YouTube 登录态，默认读取 Arc
+
+输出约定:
+  text/srt  字幕内容写入 stdout
+  json      单个 JSON 对象写入 stdout，包含 source、format、subtitle_count、
+            subtitles、video_title，以及可选的 language
+  日志/错误  写入 stderr；成功退出码为 0，失败退出码非 0
+  Agent/脚本建议使用 --format json；--verbose 不会改变 stdout 的数据格式
+
+依赖:
+  在线视频下载需要 yt-dlp；视频音轨提取需要 ffmpeg；Whisper ASR 仅支持 Apple Silicon
+
 示例:
-  video-captions https://www.bilibili.com/video/BV1xx
-  video-captions --format json https://youtube.com/watch?v=xxx
-  video-captions --browser arc --format srt /path/to/video.mp4
-  video-captions --model small -v https://youtu.be/xxx""",
+  video-captions "https://www.bilibili.com/video/BV1xx"
+  video-captions --format srt "https://youtu.be/xxx"
+  video-captions --format json "https://youtube.com/watch?v=xxx"
+  video-captions --browser chrome "https://www.bilibili.com/video/BV1xx"
+  video-captions --model small "/path/to/audio.mp3\"""",
     )
-    parser.add_argument("source", help="视频 URL 或本地文件路径")
+    parser.add_argument("source", help="B站/YouTube URL、B站 BV 号或本地音视频文件路径")
     parser.add_argument(
         "--browser",
         choices=["auto", "arc", "chrome", "edge", "firefox", "brave"],
         default="arc",
-        help="从浏览器读取 Cookie（默认 arc）",
+        help="在线视频需要登录时读取 Cookie；对本地文件无效（默认 arc）",
     )
     parser.add_argument(
         "--model",
         choices=["base", "small", "medium", "large"],
         default="large",
-        help="Whisper ASR 模型大小（默认 large）",
+        help="ASR 回退或本地转写使用的 Whisper 模型（默认 large）",
     )
     parser.add_argument(
-        "--format", choices=["text", "srt", "json"], default="text", help="输出格式（默认 text）"
+        "--format",
+        choices=["text", "srt", "json"],
+        default="text",
+        help="stdout 输出格式；Agent/脚本建议使用 json（默认 text）",
     )
-    parser.add_argument("--verbose", "-v", action="store_true", help="显示详细日志和元信息")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="将详细日志和元信息写入 stderr"
+    )
 
     args = parser.parse_args()
 

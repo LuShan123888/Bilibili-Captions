@@ -14,7 +14,6 @@
 - **ASR 生成** - 无字幕时自动使用 Whisper 生成
 - **繁简转换** - 自动转换为简体中文
 - **MCP 服务器** - 集成到 Claude Desktop
-- **Agent Skill** - 兼容所有 AI 编程助手的 Skill 封装
 - **完整测试** - 包含真实视频测试用例
 
 ## 使用
@@ -34,6 +33,9 @@ pip install video-captions
 ### 运行
 
 ```bash
+# 查看全部命令行选项
+video-captions --help
+
 # B站视频（默认自动从浏览器读取 Cookie）
 video-captions https://www.bilibili.com/video/BV16YC3BrEDz
 
@@ -102,17 +104,7 @@ video-captions https://www.bilibili.com/video/BV16YC3BrEDz
 }
 ```
 
-> **注意：** B站视频会自动从浏览器读取 Cookie，无需手动配置 SESSDATA。
-
-### Agent Skill
-
-项目内置 Agent Skill（`skills/video-captions/SKILL.md`），兼容 Claude Code、Codex CLI、Gemini CLI、OpenClaw 等所有 AI 编程助手。安装 CLI 后即可使用：
-
-```bash
-uv tool install video-captions
-```
-
-通过 [sync-skills](https://github.com/LuShan123888/sync-skills) 可自动同步到所有 Agent 的 Skill 目录。Skill 支持自然语言触发（如"下载字幕"、"获取视频字幕"等），自动引导 Agent 选择正确的命令和参数。
+> **注意：** B站视频会自动从浏览器读取 Cookie，无需手动配置 SESSDATA。CLI 的完整参数和用法以 `video-captions --help` 为准。
 
 ### MCP 工具
 
@@ -308,7 +300,6 @@ generation.
 - **ASR Generation** - Automatically generate subtitles with Whisper when none exist
 - **Conversion** - Automatically convert Traditional Chinese to Simplified Chinese
 - **MCP Server** - Integrate with Claude Desktop
-- **Agent Skill** - Compatible with all AI coding agents
 - **Tested** - Includes real video test cases
 
 ## Usage
@@ -328,6 +319,9 @@ pip install video-captions
 ### Running
 
 ```bash
+# Show all command-line options
+video-captions --help
+
 # Bilibili video (auto-read Cookie from browser)
 video-captions https://www.bilibili.com/video/BV16YC3BrEDz
 
@@ -396,17 +390,7 @@ Configure in Claude Desktop's `claude_desktop_config.json`:
 }
 ```
 
-> **Note:** For Bilibili videos, Cookie is automatically read from browser, no manual SESSDATA configuration needed.
-
-### Agent Skill
-
-A built-in Skill is available at `skills/video-captions/SKILL.md`, compatible with Claude Code, Codex CLI, Gemini CLI, OpenClaw and other AI coding agents. Install the CLI first:
-
-```bash
-uv tool install video-captions
-```
-
-Use [sync-skills](https://github.com/LuShan123888/sync-skills) to auto-sync the Skill to all agents. The Skill supports natural language triggers (e.g. "download subtitles", "get video captions") and automatically guides the Agent to select the correct command and parameters.
+> **Note:** For Bilibili videos, Cookie is automatically read from browser, no manual SESSDATA configuration needed. Run `video-captions --help` for the complete CLI usage and option list.
 
 ### MCP Tools
 
